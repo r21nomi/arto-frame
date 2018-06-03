@@ -1,0 +1,19 @@
+{
+  "name": "arto-frame",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch"
+  },
+  "keywords": [],
+  "author": "r21nomi",
+  "license": "Ryota Takemoto (r21nomi)",
+  "devDependencies": {
+    "typescript": "^2.9.1"
+  },
+  "dependencies": {
+    "@types/node": "^10.3.0"
+  }
+}
