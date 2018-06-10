@@ -10,84 +10,106 @@ precision mediump float;
 
 #extension GL_OES_standard_derivatives : enable
 
-#define PI 3.141592653589793
-#define TWO_PI  6.283
+const float EPS = 0.0001;
 
-uniform vec2 resolution;
 uniform float time;
+uniform vec2 mouse;
+uniform vec2 resolution;
 
-float backOut(float t) {
-	float f = 1.0 - t;
-	return 1.0 - (pow(f, 3.0) - f * sin(f * PI));
-}
-
-vec2 random(vec2 p) {
-	return fract(sin(vec2(dot(p,vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)))) * 43758.5453);
-}
-
-mat2 rotate2d(float _angle){
-	return mat2(cos(_angle), -sin(_angle),  sin(_angle), cos(_angle));
+float exposeInOut(float t) {
+	if (t == 0.0) {
+		return 0.0;
+	
+	} else if (t == 1.0) {
+		return 1.0;
+	
+	} else if ((t /= 0.5) < 1.0) {
+		return 0.5 * pow(2.0, 10.0 * (t - 1.0));
+	
+	} else {
+		return 0.5 * (-pow(2.0, -10.0 * --t) + 2.0);
+	}
 }
 
 float map(float value, float beforeMin, float beforeMax, float afterMin, float afterMax) {
 	return afterMin + (afterMax - afterMin) * ((value - beforeMin) / (beforeMax - beforeMin));
 }
 
-float obliqueLine(vec2 uv){
-	return step(0.6, fract((uv.x + uv.y + time * 0.8) * 4.0));
+vec3 repetition(vec3 ray, float offset) {
+	vec3 repeatedRay = mod(ray, offset) - offset / 2.0;
+	return vec3(repeatedRay.x, repeatedRay.y, repeatedRay.z);
+}
+
+float barDist(vec2 st, float width) {
+	return length(max(abs(st) - width, 0.0));
+}
+
+float sceneDist(vec3 ray) {
+	vec3 repeatedRay1 = repetition(ray, 1.0);
+	vec3 repeatedRay2 = repetition(ray, 1.0);
+
+	float barDistance = barDist(repeatedRay1.yz, 0.1);
+	float barDistance2 = barDist(repeatedRay2.xz, 0.1);
+	
+	float result = min(barDistance, barDistance2);
+	
+	return result;
+}
+
+vec3 getNormal(vec3 p){
+	return normalize(vec3(
+		sceneDist(p + vec3(EPS, 0.0, 0.0)) - sceneDist(p + vec3(-EPS, 0.0, 0.0)),
+		sceneDist(p + vec3(0.0,  EPS, 0.0)) - sceneDist(p + vec3(0.0,  -EPS, 0.0)),
+		sceneDist(p + vec3(0.0, 0.0,  EPS)) - sceneDist(p + vec3(0.0, 0.0,  -EPS))
+	));
 }
 
 void main( void ) {
-	vec2 uv = (gl_FragCoord.xy * 2.0 - resolution) / min(resolution.x, resolution.y);
+	vec2 st = (gl_FragCoord.xy * 2.0 - resolution) / min(resolution.x, resolution.y);
 	
-	vec2 scaledUv = uv * 8.0;
+	float t = time * 0.5;
+	float step = 1.0;
+	float easing =  exposeInOut(fract(t));
+	float speed = (floor(t) + easing) * step;
 	
-	scaledUv -= 0.5;
-	scaledUv *= rotate2d(time * 0.2);
-	scaledUv += 0.5;
+	vec3 cameraPosition = vec3(speed,  0.0, -time);
+	vec3 cameraDirection = vec3(0.0,  0.0, -1.0);
+	vec3 cameraUp  = vec3(0.0,  1.0,  0.0);
+	vec3 cameraSide = cross(cameraDirection, cameraUp);
+	float targetDepth = 1.0;
 	
-	vec2 i_st = floor(scaledUv);
-	vec2 f_st = fract(scaledUv);
-
-	float m_dist = 1.0;
+	vec3 ray = normalize(cameraSide * st.x + cameraUp * st.y + cameraDirection * targetDepth);
 	
-	float t = time * 1.5;
-	float speed = (floor(t) + backOut(fract(t)));
+	vec3 rayPosition = cameraPosition;
+	float distance = 0.0;
+	float currentRayLength = 0.0;
+	bool hit = false;
 	
-	for (int j = -1; j <= 1; j++) {
-		for (int i = -1; i <= 1; i++) {
-			// Neighbor place in the grid
-			vec2 neighbor = vec2(float(i), float(j));
-            
-			// Random position from current + neighbor place in the grid
-			vec2 offset = random(i_st + neighbor);
-
-			// Animate the offset
-			offset = vec2(
-				map(sin(speed + TWO_PI * offset).x, -1.0, 1.0, 0.0, 1.0),
-				map(sin(speed + TWO_PI * offset).y, -1.0, 1.0, 0.0, 1.0)
-			);
-			
-			// Position of the cell             
-			vec2 pos = neighbor + offset - f_st;
-            
-			// Cell distance
-			float dist = length(pos);
-
-			// Metaball
-			m_dist = min(m_dist, m_dist * dist);
+	vec3 lightDirection = normalize(vec3(1.0, 1.0, -2.0));
+	
+	for (int i = 0; i < 164; i++) {
+		distance = sceneDist(rayPosition);
+		currentRayLength += distance;
+		rayPosition = cameraPosition + ray * currentRayLength;
+		
+		if (abs(distance) < EPS) {
+			hit = true;
+			break;
 		}
 	}
 	
-	float cell = 1.0 - step(0.1, m_dist);
+	vec3 color;
 	
-	vec3 color = vec3(0.05);
-	color += cell;
+	if (hit) {
+		vec3 normal = getNormal(rayPosition);
+		float diff = clamp(dot(lightDirection, normal), 0.1, 1.0);
+		color = vec3(0, 1.0, map(sin(time), -1.0, 1.0, 1.0, 8.0)) * diff ;
+		
+	} else {
+		color = vec3(0.12);
+	}
 	
-	color.r *= obliqueLine(uv * 4.0);
-	color.g *= obliqueLine(uv * 8.0);
-
-	gl_FragColor = vec4(color, 1.0);
+	gl_FragColor = vec4(color + 0.05 * currentRayLength, 1.0);
 }`;
 
     private fs = require('fs');
