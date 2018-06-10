@@ -1,5 +1,6 @@
 import * as http from 'http';
 import { ShaderController } from './shaderController';
+import { GLSLFormatConverter } from "./glslFormatConverter";
 
 export class Server {
 
@@ -9,8 +10,8 @@ export class Server {
             
             #extension GL_OES_standard_derivatives : enable
             
-            uniform float u_time;
-            uniform vec2 u_resolution;
+            uniform float time;
+            uniform vec2 resolution;
             
             float random(in vec2 uv){
                     return fract(sin(dot(uv, vec2(12.9898,78.233))) * 43758.5453);
@@ -21,16 +22,16 @@ export class Server {
             }
             
             void main( void ) {
-                    vec2 uv = (gl_FragCoord.xy * 2.0 -  u_resolution.xy) / min(u_resolution.x, u_resolution.y);
+                    vec2 uv = (gl_FragCoord.xy * 2.0 -  resolution.xy) / min(resolution.x, resolution.y);
             
-                    uv.x += u_time * 0.2;
+                    uv.x += time * 0.2;
             
                     vec2 scaledUv = uv * 3.0;
                     vec2 repeatedUv = fract(scaledUv);
                     repeatedUv -= 0.5;
             
                     float randomOffset = random(floor(scaledUv)) + 0.5;
-                    float distortion = (repeatedUv.x + sin(repeatedUv.y * 13.0 + (u_time * 12.0 * randomOffset))) * 0.04;
+                    float distortion = (repeatedUv.x + sin(repeatedUv.y * 13.0 + (time * 12.0 * randomOffset))) * 0.04;
             
                     repeatedUv.x += distortion;
             
@@ -48,6 +49,7 @@ export class Server {
             }`;
 
     private fs = require('fs');
+    private glslFormatConverter: GLSLFormatConverter = new GLSLFormatConverter();
     private shaderController: ShaderController = new ShaderController();
 
     public start() {
@@ -66,8 +68,9 @@ export class Server {
         response.end('Displaying shader art...');
 
         let fileName = 'glsl/sample.frag';
+        let formattedShader = this.glslFormatConverter.toGLSLViewerFormat(this.FRAGMENT_SHADER_SAMPLE);
 
-        this.fs.writeFile(fileName, this.FRAGMENT_SHADER_SAMPLE, (err: any) => {
+        this.fs.writeFile(fileName, formattedShader, (err: any) => {
             if (err) {
                 throw err;
             } else {
