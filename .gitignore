@@ -8,3 +8,7 @@
 
 # production
 /build
+
+# Generated files by ts
+*.js
+*.js.map
