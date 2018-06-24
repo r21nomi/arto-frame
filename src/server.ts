@@ -154,7 +154,7 @@ void main( void ) {
     private requestHandler(request: http.IncomingMessage, response: http.ServerResponse): void {
         response.end('Displaying shader art...');
 
-        let fileName = 'glsl/sample.frag';
+        let fileName = `${__dirname}/sample.frag`;
         let formattedShader = this.glslFormatConverter.toGLSLViewerFormat(this.FRAGMENT_SHADER_SAMPLE);
 
         this.fs.writeFile(fileName, formattedShader, (err: any) => {
@@ -167,11 +167,9 @@ void main( void ) {
     }
 
     private changeShader(artCodeEntity: ArtCodeEntity) {
-        let fileName = 'glsl/sample.frag';
+        let fileName = `${__dirname}/sample.frag`;
         let fragmentShader = artCodeEntity.codes[CodeType.FRAGMENT_SHADER - 1].text;
         let formattedShader = this.glslFormatConverter.toGLSLViewerFormat(fragmentShader);
-
-        console.log(formattedShader);
 
         this.fs.writeFile(fileName, formattedShader, (err: any) => {
             if (err) {

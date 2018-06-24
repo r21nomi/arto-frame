@@ -1,5 +1,7 @@
 # See https://help.github.com/ignore-files/ for more about ignoring files.
 
+.DS_Store
+
 # idea
 .idea
 
@@ -12,3 +14,6 @@
 # Generated files by ts
 *.js
 *.js.map
+
+# Generated GLSL files
+*.frag
