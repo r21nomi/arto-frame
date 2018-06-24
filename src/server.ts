@@ -1,21 +1,21 @@
 import * as http from 'http';
 import { ShaderController } from './shaderController';
-import { GLSLFormatConverter } from "./glslFormatConverter";
+import { GLSLFormatConverter } from './glslFormatConverter';
+import * as firebase from 'firebase';
+import {urlProvider} from "./urlProvider";
+import {handleErrors} from "./handleErrors";
+import {ArtCodeEntity, CodeType} from "./entity";
 
 export class Server {
 
     private FRAGMENT_SHADER_SAMPLE: String = `#ifdef GL_ES
 precision mediump float;
 #endif
-
 #extension GL_OES_standard_derivatives : enable
-
 const float EPS = 0.0001;
-
 uniform float time;
 uniform vec2 mouse;
 uniform vec2 resolution;
-
 float exposeInOut(float t) {
 	if (t == 0.0) {
 		return 0.0;
@@ -30,24 +30,19 @@ float exposeInOut(float t) {
 		return 0.5 * (-pow(2.0, -10.0 * --t) + 2.0);
 	}
 }
-
 float map(float value, float beforeMin, float beforeMax, float afterMin, float afterMax) {
 	return afterMin + (afterMax - afterMin) * ((value - beforeMin) / (beforeMax - beforeMin));
 }
-
 vec3 repetition(vec3 ray, float offset) {
 	vec3 repeatedRay = mod(ray, offset) - offset / 2.0;
 	return vec3(repeatedRay.x, repeatedRay.y, repeatedRay.z);
 }
-
 float barDist(vec2 st, float width) {
 	return length(max(abs(st) - width, 0.0));
 }
-
 float sceneDist(vec3 ray) {
 	vec3 repeatedRay1 = repetition(ray, 1.0);
 	vec3 repeatedRay2 = repetition(ray, 1.0);
-
 	float barDistance = barDist(repeatedRay1.yz, 0.1);
 	float barDistance2 = barDist(repeatedRay2.xz, 0.1);
 	
@@ -55,7 +50,6 @@ float sceneDist(vec3 ray) {
 	
 	return result;
 }
-
 vec3 getNormal(vec3 p){
 	return normalize(vec3(
 		sceneDist(p + vec3(EPS, 0.0, 0.0)) - sceneDist(p + vec3(-EPS, 0.0, 0.0)),
@@ -63,7 +57,6 @@ vec3 getNormal(vec3 p){
 		sceneDist(p + vec3(0.0, 0.0,  EPS)) - sceneDist(p + vec3(0.0, 0.0,  -EPS))
 	));
 }
-
 void main( void ) {
 	vec2 st = (gl_FragCoord.xy * 2.0 - resolution) / min(resolution.x, resolution.y);
 	
@@ -116,6 +109,20 @@ void main( void ) {
     private glslFormatConverter: GLSLFormatConverter = new GLSLFormatConverter();
     private shaderController: ShaderController = new ShaderController();
 
+    /**
+     * Observe art changed on firebase real time database.
+     */
+    public observeArt() {
+        let userId = 'nvOag2sj8CQvARL1koIdLbyjOGz1';
+        let self = this;
+
+        firebase.database().ref('users/' + userId)
+            .on('child_changed', function(snapshot) {
+                let artId = snapshot.val();
+                self.fetchArt(artId);
+            });
+    }
+
     public start() {
         const server: http.Server = http.createServer(
             (request: http.IncomingMessage, response: http.ServerResponse) => {
@@ -128,11 +135,43 @@ void main( void ) {
         server.listen('5000');
     }
 
+    private fetchArt(artId: string) {
+        let option = {
+            method: 'GET'
+        };
+
+        let url = `${urlProvider.endpoint}/v1/artcode/${artId}`;
+        console.log(url);
+        fetch(`${urlProvider.endpoint}/v1/artcode/${artId}`, option)
+            .then(handleErrors)
+            .then(response => response.json())
+            .then((artCodeEntity: ArtCodeEntity) => {
+                this.changeShader(artCodeEntity)
+            })
+            .catch(error => console.error(error));
+    }
+
     private requestHandler(request: http.IncomingMessage, response: http.ServerResponse): void {
         response.end('Displaying shader art...');
 
         let fileName = 'glsl/sample.frag';
         let formattedShader = this.glslFormatConverter.toGLSLViewerFormat(this.FRAGMENT_SHADER_SAMPLE);
+
+        this.fs.writeFile(fileName, formattedShader, (err: any) => {
+            if (err) {
+                throw err;
+            } else {
+                this.shaderController.openShader(fileName);
+            }
+        });
+    }
+
+    private changeShader(artCodeEntity: ArtCodeEntity) {
+        let fileName = 'glsl/sample.frag';
+        let fragmentShader = artCodeEntity.codes[CodeType.FRAGMENT_SHADER - 1].text;
+        let formattedShader = this.glslFormatConverter.toGLSLViewerFormat(fragmentShader);
+
+        console.log(formattedShader);
 
         this.fs.writeFile(fileName, formattedShader, (err: any) => {
             if (err) {
