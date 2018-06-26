@@ -116,10 +116,25 @@ void main( void ) {
         let userId = 'nvOag2sj8CQvARL1koIdLbyjOGz1';
         let self = this;
 
-        firebase.database().ref('users/' + userId)
+        // Get initial art.
+        firebase.database().ref(`users/${userId}`)
+            .once('value')
+            .then(function(snapshot) {
+                let artId = snapshot.val() && snapshot.val().art;
+
+                if (artId) {
+                    self.fetchArt(artId);
+                }
+            });
+
+        // Observe art.
+        firebase.database().ref(`users/${userId}`)
             .on('child_changed', function(snapshot) {
                 let artId = snapshot.val();
-                self.fetchArt(artId);
+
+                if (artId) {
+                    self.fetchArt(artId);
+                }
             });
     }
 
