@@ -17,3 +17,6 @@
 
 # Generated GLSL files
 *.frag
+
+# firebase
+*/firebaseConfig.ts
