@@ -7,6 +7,7 @@ echo "source nvm"
 echo "install node"
 nvm install 8.11.2
 nvm alias default v8.11.2
+source ~/.bashrc
 
 # install arto-frame
 mkdir -p ~/.arto_frame
