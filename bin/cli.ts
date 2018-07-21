@@ -1,5 +1,7 @@
-import { Server } from './server';
-import { firebaseConfig } from './firebaseConfig';
+#!/usr/bin/env node
+
+import { Server } from '../src/server';
+import { firebaseConfig } from '../src/firebaseConfig';
 import * as firebase from 'firebase';
 
 class Main {

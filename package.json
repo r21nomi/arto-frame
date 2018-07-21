@@ -10,6 +10,9 @@
   "keywords": [],
   "author": "r21nomi",
   "license": "Ryota Takemoto (r21nomi)",
+  "bin": {
+    "arto-frame": "./bin/cli.js"
+  },
   "devDependencies": {
     "typescript": "^2.9.1"
   },
