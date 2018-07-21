@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # install nvm
-curl https://raw.githubusercontent.com/creationix/nvm/v0.33.11/install.sh
+curl https://raw.githubusercontent.com/creationix/nvm/v0.33.11/install.sh | bash
 echo "source nvm"
 . ~/.nvm/nvm.sh
 echo "install node"
