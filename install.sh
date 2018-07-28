@@ -13,3 +13,6 @@ source ~/.bashrc
 mkdir -p ~/.arto_frame
 cd ~/.arto_frame
 npm install -g arto-frame
+
+# install glslViewer
+sudo apt-get install glslviewer
