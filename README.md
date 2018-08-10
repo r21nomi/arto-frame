@@ -1,4 +1,4 @@
-# arto-frame
+# shaderarts-frame
 Application for frame device like Raspberry Pi.
 
 ## Get Started
@@ -34,5 +34,5 @@ $ npm run build
 
 ### Start Application
 ```
-$ node src/app
+$ node bin/cli
 ```

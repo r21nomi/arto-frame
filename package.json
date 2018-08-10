@@ -1,5 +1,5 @@
 {
-  "name": "arto-frame",
+  "name": "shaderarts-frame",
   "version": "0.0.7",
   "description": "",
   "main": "index.js",
@@ -11,7 +11,7 @@
   "author": "r21nomi",
   "license": "Ryota Takemoto (r21nomi)",
   "bin": {
-    "arto-frame": "./bin/cli.js"
+    "shaderarts-frame": "./bin/cli.js"
   },
   "devDependencies": {
     "typescript": "^2.9.1"

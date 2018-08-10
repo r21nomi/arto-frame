@@ -1,5 +1,5 @@
 #!/bin/bash
 
-echo "Arto - autorun.sh"
+echo "ShaderArts - autorun.sh"
 
 node src/app
